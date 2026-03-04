@@ -1,8 +1,8 @@
-name: GitHub Snake Game
+name: GitHub Snake Game Ultimate
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # run daily at midnight UTC
+    - cron: "0 0 * * *"
   workflow_dispatch:
   push:
     branches:
@@ -14,11 +14,9 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      # 1. Checkout repo
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # 2. Generate Snake Animations
       - name: Generate GitHub Contributions Snake Animations
         uses: Platane/snk@v3
         with:
@@ -30,13 +28,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 3. Ensure output branch exists
-      - name: Ensure output branch exists
+      - name: Setup output branch (run only once)
         run: |
-          git fetch origin output || git checkout --orphan output
-          git checkout output
+          if ! git ls-remote --exit-code origin output; then
+            echo "Branch output not found, creating..."
+            git checkout --orphan output
+            git rm -rf .
+            git commit --allow-empty -m "Init output branch"
+            git push origin output
+          fi
 
-      # 4. Skip push if no files
       - name: Check if dist has files
         run: |
           if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
@@ -44,7 +45,6 @@ jobs:
             exit 0
           fi
 
-      # 5. Deploy to output branch
       - name: Deploy to Output Branch
         uses: peaceiris/actions-gh-pages@v3
         with:
