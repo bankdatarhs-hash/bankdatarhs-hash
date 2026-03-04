@@ -1,4 +1,4 @@
-name: GitHub Snake Game Ultimate Fixed
+name: GitHub Snake Game
 
 on:
   schedule:
@@ -14,9 +14,17 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # 1. Checkout repo
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # 2. Setup Git identity for commits
+      - name: Setup Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 3. Generate Snake Animations
       - name: Generate GitHub Contributions Snake Animations
         uses: Platane/snk@v3
         with:
@@ -28,19 +36,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup output branch safely
+      # 4. Setup output branch safely
+      - name: Setup output branch
         run: |
           # cek lokal dulu
-          if ! git show-ref --verify --quiet refs/heads/output; then
-            echo "Local branch output not found, creating..."
+          if git show-ref --verify --quiet refs/heads/output; then
+            git checkout output
+          else
+            echo "Local branch output not found, creating orphan branch..."
             git checkout --orphan output
             git rm -rf .
             git commit --allow-empty -m "Init output branch"
             git push -u origin output
-          else
-            git checkout output
           fi
 
+      # 5. Skip push if dist empty
       - name: Check if dist has files
         run: |
           if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
@@ -48,6 +58,7 @@ jobs:
             exit 0
           fi
 
+      # 6. Deploy to output branch
       - name: Deploy to Output Branch
         uses: peaceiris/actions-gh-pages@v3
         with:
